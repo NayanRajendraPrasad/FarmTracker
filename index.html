@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<title>Farm Tracker</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#185a9d">
+
+<style>
+
+body{
+margin:0;
+font-family:Segoe UI;
+background:linear-gradient(135deg,#43cea2,#185a9d);
+}
+
+.container{
+max-width:480px;
+margin:auto;
+padding:20px;
+}
+
+h1{color:white;text-align:center;}
+
+.card{
+background:white;
+padding:15px;
+margin-top:15px;
+border-radius:12px;
+box-shadow:0 4px 10px rgba(0,0,0,.2);
+}
+
+input,select,button{
+width:100%;
+padding:10px;
+margin-top:10px;
+border-radius:8px;
+}
+
+button{
+background:#27ae60;
+color:white;
+border:none;
+}
+
+.alert{
+color:red;
+font-weight:bold;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>🐄 Farm Tracker</h1>
+
+<div class="card">
+
+<input id="name" placeholder="Cow Name">
+
+<select id="type">
+<option>Pregnancy</option>
+<option>Heat</option>
+</select>
+
+<input type="date" id="date">
+
+<button onclick="addCow()">Add Cow</button>
+
+</div>
+
+<div id="data"></div>
+
+</div>
+
+<script>
+
+/* ===== CHANGE ONLY THIS ===== */
+const SCRIPT_URL =
+"https://script.google.com/macros/s/AKfycbygvaiuRXEXRnUiBLw98Rsx3JhZh_kAegMSTJ67YkpGDjXuWQWxIofXeviu-yGI9yUf/exec";
+
+const SHEET_URL =
+"https://docs.google.com/spreadsheets/d/e/2PACX-1vQRMTIQyMhKfxcU4cyFhPBrkpYjPq7_5AsrZXMD_gOw3_5JBGQayb-2-U7zKF4gem8YuQHLapytSofE/pub?output=csv";
+
+const GESTATION=280;
+const HEAT=21;
+
+Notification.requestPermission();
+
+function notify(msg){
+if(Notification.permission==="granted")
+new Notification("Farm Alert",{body:msg});
+}
+
+function addCow(){
+
+fetch(SCRIPT_URL,{
+method:"POST",
+body:JSON.stringify({
+name:name.value,
+type:type.value,
+date:date.value
+})
+}).then(()=>location.reload());
+}
+
+fetch(SHEET_URL)
+.then(r=>r.text())
+.then(csv=>{
+
+let rows=csv.split("\n").slice(1);
+
+rows.forEach(r=>{
+let c=r.split(",");
+if(c.length<3)return;
+processCow(c[0],c[1],c[2]);
+});
+});
+
+function convert(d){
+return{m:Math.floor(d/30),d:d%30};
+}
+
+function processCow(name,type,date){
+
+let start=new Date(date);
+let today=new Date();
+
+let diff=Math.floor((today-start)/86400000);
+
+let html="";
+let remain;
+
+/* Pregnancy */
+
+if(type.trim()=="Pregnancy"){
+
+remain=GESTATION-diff;
+
+if(remain==2||remain==1)
+notify(name+" might deliver in "+remain+" days");
+
+let done=convert(diff);
+let pend=convert(remain);
+
+let delivery=
+new Date(start.getTime()+GESTATION*86400000);
+
+html=`
+<div class="card">
+🐄 <b>${name}</b><br>
+Completed: ${done.m}M ${done.d}D<br>
+Remaining: ${pend.m}M ${pend.d}D<br>
+Delivery: ${delivery.toDateString()}
+</div>`;
+}
+
+/* Heat */
+
+if(type.trim()=="Heat"){
+
+remain=HEAT-diff;
+
+if(remain==3||remain==2)
+notify(name+" next heat in "+remain+" days");
+
+let next=
+new Date(start.getTime()+HEAT*86400000);
+
+html=`
+<div class="card">
+🔥 <b>${name}</b><br>
+Days: ${diff}<br>
+Next Heat In: ${remain} Days<br>
+Next Heat: ${next.toDateString()}
+</div>`;
+}
+
+data.innerHTML+=html;
+}
+
+/* SERVICE WORKER */
+if("serviceWorker" in navigator){
+navigator.serviceWorker.register("sw.js");
+}
+
+</script>
+
+</body>
+</html>
