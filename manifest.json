@@ -1,6 +1,6 @@
 {
-"name":"Cow Farm Tracker",
-"short_name":"FarmTracker",
+"name":"Farm Tracker",
+"short_name":"Farm",
 "start_url":"index.html",
 "display":"standalone",
 "background_color":"#185a9d",
