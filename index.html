@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Farm Tracker</title>
+
+<style>
+
+body{
+font-family:Arial;
+margin:0;
+background:linear-gradient(135deg,#43cea2,#185a9d);
+}
+
+.container{
+max-width:900px;
+margin:auto;
+padding:20px;
+}
+
+h1{
+text-align:center;
+color:white;
+}
+
+.form{
+background:white;
+padding:20px;
+border-radius:10px;
+margin-bottom:20px;
+}
+
+input,select,button{
+width:100%;
+padding:10px;
+margin-top:10px;
+border-radius:6px;
+}
+
+button{
+background:#27ae60;
+color:white;
+border:none;
+cursor:pointer;
+}
+
+.columns{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:20px;
+}
+
+.column{
+background:white;
+padding:15px;
+border-radius:10px;
+}
+
+.card{
+background:#f2f2f2;
+padding:12px;
+border-radius:8px;
+margin-top:10px;
+}
+
+.delete{
+background:red;
+margin-top:8px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>🐄 Farm Tracker</h1>
+
+<div class="form">
+
+<input id="name" placeholder="Cow Name">
+
+<select id="type">
+<option value="Pregnancy">Pregnancy</option>
+<option value="Heat">Heat</option>
+</select>
+
+<input type="date" id="date">
+
+<button onclick="addCow()">Add Cow</button>
+
+</div>
+
+
+<div class="columns">
+
+<div class="column">
+
+<h3>🐄 Pregnancy</h3>
+
+<div id="pregnancy"></div>
+
+</div>
+
+
+<div class="column">
+
+<h3>🔥 Heat Cycle</h3>
+
+<div id="heat"></div>
+
+</div>
+
+</div>
+
+</div>
+
+
+<script>
+
+/* CHANGE ONLY IF SCRIPT URL CHANGES */
+
+const SCRIPT_URL =
+"https://script.google.com/macros/s/AKfycbygvaiuRXEXRnUiBLw98Rsx3JhZh_kAegMSTJ67YkpGDjXuWQWxIofXeviu-yGI9yUf/exec";
+
+
+const SHEET_URL =
+"https://docs.google.com/spreadsheets/d/e/2PACX-1vQRMTIQyMhKfxcU4cyFhPBrkpYjPq7_5AsrZXMD_gOw3_5JBGQayb-2-U7zKF4gem8YuQHLapytSofE/pub?output=csv";
+
+
+const GESTATION = 280;
+const HEAT = 21;
+
+
+
+function addCow(){
+
+fetch(SCRIPT_URL,{
+method:"POST",
+body:JSON.stringify({
+action:"add",
+name:name.value,
+type:type.value,
+date:date.value
+})
+})
+.then(()=>location.reload())
+
+}
+
+
+function deleteCow(name,type,date){
+
+fetch(SCRIPT_URL,{
+method:"POST",
+body:JSON.stringify({
+action:"delete",
+name:name,
+type:type,
+date:date
+})
+})
+.then(()=>location.reload())
+
+}
+
+
+
+fetch(SHEET_URL)
+.then(r=>r.text())
+.then(csv=>{
+
+let rows = csv.split("\n").slice(1);
+
+rows.forEach(row=>{
+
+let c=row.split(",")
+
+let cow=c[0]
+let type=c[1]
+let date=c[2]
+
+if(!cow||!type||!date) return
+
+processCow(cow,type,date)
+
+})
+
+})
+
+
+function convert(d){
+
+return{
+m:Math.floor(d/30),
+d:d%30
+}
+
+}
+
+
+
+function processCow(name,type,date){
+
+let start=new Date(date)
+let today=new Date()
+
+let diff=Math.floor((today-start)/86400000)
+
+if(type.trim()=="Pregnancy"){
+
+let remain=GESTATION-diff
+if(remain<0) remain=0
+
+let done=convert(diff)
+let pend=convert(remain)
+
+let delivery=new Date(start.getTime()+GESTATION*86400000)
+
+pregnancy.innerHTML+=`
+
+<div class="card">
+
+<b>${name}</b><br>
+
+Completed: ${done.m}M ${done.d}D<br>
+
+Remaining: ${pend.m}M ${pend.d}D<br>
+
+Delivery: ${delivery.toDateString()}
+
+<button class="delete"
+onclick="deleteCow('${name}','${type}','${date}')">
+Delete
+</button>
+
+</div>
+
+`
+
+}
+
+
+
+if(type.trim()=="Heat"){
+
+let remain=HEAT-diff
+if(remain<0) remain=0
+
+let next=new Date(start.getTime()+HEAT*86400000)
+
+heat.innerHTML+=`
+
+<div class="card">
+
+<b>${name}</b><br>
+
+Days: ${diff}<br>
+
+Next Heat In: ${remain} Days<br>
+
+Next Heat: ${next.toDateString()}
+
+<button class="delete"
+onclick="deleteCow('${name}','${type}','${date}')">
+Delete
+</button>
+
+</div>
+
+`
+
+}
+
+}
+
+</script>
+
+</body>
+</html>
