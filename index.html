@@ -56,6 +56,7 @@ button{
 background:#27ae60;
 color:white;
 border:none;
+cursor:pointer;
 }
 
 .columns{
@@ -133,6 +134,8 @@ const SHEET_URL="https://docs.google.com/spreadsheets/d/e/2PACX-1vQRMTIQyMhKfxcU
 const GESTATION=280
 const HEAT=21
 
+let loading=false
+
 function showMsg(text,type){
 let m=document.getElementById("msg")
 m.className="msg "+type
@@ -146,12 +149,16 @@ setTimeout(()=>m.style.display="none",3000)
 /* ADD */
 function addCow(){
 
+if(loading) return
+loading=true
+
 let n=name.value.trim()
 let t=type.value
 let d=date.value
 
 if(!n || !t || !d){
 showMsg("Fill all fields","error")
+loading=false
 return
 }
 
@@ -168,13 +175,15 @@ date:d
 
 showMsg("✅ Cow added successfully","success")
 
-setTimeout(()=>location.reload(),800)
+setTimeout(()=>location.reload(),1000)
 
 }
 
 
 /* DELETE */
 function deleteCow(n,t,d){
+
+if(!confirm("Delete this cow?")) return
 
 fetch(SCRIPT_URL,{
 method:"POST",
@@ -194,7 +203,7 @@ setTimeout(()=>location.reload(),800)
 }
 
 
-/* LOAD */
+/* LOAD DATA */
 fetch(SHEET_URL)
 .then(r=>r.text())
 .then(csv=>{
@@ -217,6 +226,7 @@ processCow(c[0].trim(),c[1].trim(),c[2].trim())
 })
 
 
+/* PROCESS */
 function processCow(name,type,date){
 
 let start=new Date(date)
