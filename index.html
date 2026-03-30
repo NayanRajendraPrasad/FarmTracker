@@ -24,6 +24,17 @@ text-align:center;
 color:white;
 }
 
+/* MESSAGE BOX */
+.msg{
+background:#27ae60;
+color:white;
+padding:10px;
+border-radius:8px;
+margin-bottom:10px;
+display:none;
+text-align:center;
+}
+
 .form{
 background:white;
 padding:15px;
@@ -80,6 +91,8 @@ margin-top:8px;
 
 <h1>🐄 Farm Tracker</h1>
 
+<div id="message" class="msg"></div>
+
 <div class="form">
 
 <input id="name" placeholder="Cow Name">
@@ -113,7 +126,6 @@ margin-top:8px;
 
 <script>
 
-/* 🔴 YOUR LINKS */
 const SCRIPT_URL="https://script.google.com/macros/s/AKfycbygvaiuRXEXRnUiBLw98Rsx3JhZh_kAegMSTJ67YkpGDjXuWQWxIofXeviu-yGI9yUf/exec"
 
 const SHEET_URL="https://docs.google.com/spreadsheets/d/e/2PACX-1vQRMTIQyMhKfxcU4cyFhPBrkpYjPq7_5AsrZXMD_gOw3_5JBGQayb-2-U7zKF4gem8YuQHLapytSofE/pub?output=csv"
@@ -122,21 +134,35 @@ const GESTATION=280
 const HEAT=21
 
 
-/* ✅ ADD FUNCTION (FINAL FIX) */
+function showMsg(text,color="green"){
+let m=document.getElementById("message")
+m.style.display="block"
+m.style.background=color
+m.innerText=text
+
+setTimeout(()=>{
+m.style.display="none"
+},3000)
+}
+
+
+/* ADD */
 function addCow(){
 
-let n=document.getElementById("name").value.trim()
-let t=document.getElementById("type").value
-let d=document.getElementById("date").value
+let n=name.value.trim()
+let t=type.value
+let d=date.value
 
 if(!n || !t || !d){
-alert("Please fill all fields")
+showMsg("Fill all fields","red")
 return
 }
 
 fetch(SCRIPT_URL,{
 method:"POST",
-mode:"no-cors",
+headers:{
+"Content-Type":"application/json"
+},
 body:JSON.stringify({
 action:"add",
 name:n,
@@ -144,22 +170,26 @@ type:t,
 date:d
 })
 })
+.then(res=>res.json())
 .then(()=>{
-location.reload()
+showMsg("✅ Cow added successfully")
+setTimeout(()=>location.reload(),1000)
 })
 .catch(()=>{
-alert("Error adding data")
+showMsg("❌ Error adding cow","red")
 })
 
 }
 
 
-/* ✅ DELETE FUNCTION */
+/* DELETE */
 function deleteCow(name,type,date){
 
 fetch(SCRIPT_URL,{
 method:"POST",
-mode:"no-cors",
+headers:{
+"Content-Type":"application/json"
+},
 body:JSON.stringify({
 action:"delete",
 name:name,
@@ -167,12 +197,19 @@ type:type,
 date:date
 })
 })
-.then(()=>location.reload())
+.then(res=>res.json())
+.then(()=>{
+showMsg("🗑 Cow deleted successfully")
+setTimeout(()=>location.reload(),1000)
+})
+.catch(()=>{
+showMsg("❌ Error deleting","red")
+})
 
 }
 
 
-/* ✅ LOAD DATA */
+/* LOAD DATA */
 fetch(SHEET_URL)
 .then(res=>res.text())
 .then(csv=>{
@@ -182,24 +219,19 @@ heat.innerHTML=""
 
 let rows=csv.split("\n").slice(1)
 
-rows.forEach(row=>{
+rows.forEach(r=>{
 
-let c=row.split(",")
+let c=r.split(",")
 
-let name=c[0]?.trim()
-let type=c[1]?.trim()
-let date=c[2]?.trim()
+if(!c[0]||!c[1]||!c[2]) return
 
-if(!name || !type || !date) return
-
-processCow(name,type,date)
+processCow(c[0].trim(),c[1].trim(),c[2].trim())
 
 })
 
 })
 
 
-/* ✅ PROCESS DATA */
 function processCow(name,type,date){
 
 let start=new Date(date)
@@ -209,7 +241,6 @@ let diff=Math.floor((today-start)/86400000)
 if(diff<0) diff=0
 
 
-/* PREGNANCY */
 if(type==="Pregnancy"){
 
 let remain=GESTATION-diff
@@ -232,7 +263,6 @@ Delete
 }
 
 
-/* HEAT */
 if(type==="Heat"){
 
 let cycle=Math.floor(diff/HEAT)
