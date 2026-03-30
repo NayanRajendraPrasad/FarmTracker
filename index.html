@@ -24,7 +24,6 @@ text-align:center;
 color:white;
 }
 
-/* MESSAGE */
 .msg{
 display:none;
 padding:10px;
@@ -128,20 +127,20 @@ margin-top:8px;
 
 <script>
 
-const SCRIPT_URL="https://script.google.com/macros/s/AKfycbygvaiuRXEXRnUiBLw98Rsx3JhZh_kAegMSTJ67YkpGDjXuWQWxIofXeviu-yGI9yUf/exec"
-const SHEET_URL="https://docs.google.com/spreadsheets/d/e/2PACX-1vQRMTIQyMhKfxcU4cyFhPBrkpYjPq7_5AsrZXMD_gOw3_5JBGQayb-2-U7zKF4gem8YuQHLapytSofE/pub?output=csv"
+/* ✅ YOUR SCRIPT */
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzmp07isHriEbjnXZrOQ_FNABB6al2jD5djdXiE9pQ82xqgvNmJte531yk3rnIWS4uU/exec"
+
+/* ✅ YOUR SHEET */
+const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQRMTIQyMhKfxcU4cyFhPBrkpYjPq7_5AsrZXMD_gOw3_5JBGQayb-2-U7zKF4gem8YuQHLapytSofE/pub?output=csv"
 
 const GESTATION=280
 const HEAT=21
-
-let loading=false
 
 function showMsg(text,type){
 let m=document.getElementById("msg")
 m.className="msg "+type
 m.innerText=text
 m.style.display="block"
-
 setTimeout(()=>m.style.display="none",3000)
 }
 
@@ -149,22 +148,20 @@ setTimeout(()=>m.style.display="none",3000)
 /* ADD */
 function addCow(){
 
-if(loading) return
-loading=true
-
 let n=name.value.trim()
 let t=type.value
 let d=date.value
 
 if(!n || !t || !d){
 showMsg("Fill all fields","error")
-loading=false
 return
 }
 
 fetch(SCRIPT_URL,{
 method:"POST",
-mode:"no-cors",
+headers:{
+"Content-Type":"application/json"
+},
 body:JSON.stringify({
 action:"add",
 name:n,
@@ -172,10 +169,11 @@ type:t,
 date:d
 })
 })
-
-showMsg("✅ Cow added successfully","success")
-
-setTimeout(()=>location.reload(),1000)
+.then(()=> {
+showMsg("✅ Cow added","success")
+setTimeout(()=>location.reload(),800)
+})
+.catch(()=> showMsg("❌ Error adding","error"))
 
 }
 
@@ -183,11 +181,11 @@ setTimeout(()=>location.reload(),1000)
 /* DELETE */
 function deleteCow(n,t,d){
 
-if(!confirm("Delete this cow?")) return
-
 fetch(SCRIPT_URL,{
 method:"POST",
-mode:"no-cors",
+headers:{
+"Content-Type":"application/json"
+},
 body:JSON.stringify({
 action:"delete",
 name:n,
@@ -195,10 +193,11 @@ type:t,
 date:d
 })
 })
-
-showMsg("🗑 Cow deleted successfully","success")
-
+.then(()=>{
+showMsg("🗑 Deleted","success")
 setTimeout(()=>location.reload(),800)
+})
+.catch(()=> showMsg("❌ Error deleting","error"))
 
 }
 
@@ -208,25 +207,22 @@ fetch(SHEET_URL)
 .then(r=>r.text())
 .then(csv=>{
 
-let rows=csv.split("\n").slice(1)
-
 pregnancy.innerHTML=""
 heat.innerHTML=""
 
-rows.forEach(r=>{
+let rows=csv.split("\n").slice(1)
 
+rows.forEach(r=>{
 let c=r.split(",")
 
 if(!c[0]||!c[1]||!c[2]) return
 
 processCow(c[0].trim(),c[1].trim(),c[2].trim())
-
 })
 
 })
 
 
-/* PROCESS */
 function processCow(name,type,date){
 
 let start=new Date(date)
@@ -234,7 +230,6 @@ let today=new Date()
 
 let diff=Math.floor((today-start)/86400000)
 if(diff<0) diff=0
-
 
 if(type==="Pregnancy"){
 
@@ -248,22 +243,14 @@ pregnancy.innerHTML+=`
 <b>${name}</b><br>
 Remaining: ${remain} days<br>
 Delivery: ${delivery.toLocaleDateString('en-IN')}
-
-<button class="delete"
-onclick="deleteCow('${name}','${type}','${date}')">
-Delete
-</button>
-</div>
-`
+<button class="delete" onclick="deleteCow('${name}','${type}','${date}')">Delete</button>
+</div>`
 }
-
 
 if(type==="Heat"){
 
-let cycle=Math.floor(diff/HEAT)
-
 let next=new Date(start)
-next.setDate(start.getDate()+(cycle+1)*HEAT)
+next.setDate(start.getDate()+HEAT)
 
 let remain=Math.ceil((next-today)/86400000)
 if(remain<0) remain=0
@@ -273,13 +260,8 @@ heat.innerHTML+=`
 <b>${name}</b><br>
 Next Heat In: ${remain} days<br>
 Next Heat: ${next.toLocaleDateString('en-IN')}
-
-<button class="delete"
-onclick="deleteCow('${name}','${type}','${date}')">
-Delete
-</button>
-</div>
-`
+<button class="delete" onclick="deleteCow('${name}','${type}','${date}')">Delete</button>
+</div>`
 }
 
 }
