@@ -3,14 +3,15 @@
 <head>
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
 <title>Farm Tracker</title>
+
+<link rel="manifest" href="manifest.json">
 
 <style>
 
 body{
-font-family:Arial;
 margin:0;
+font-family:Arial;
 background:linear-gradient(135deg,#43cea2,#185a9d);
 }
 
@@ -25,9 +26,23 @@ text-align:center;
 color:white;
 }
 
+.dashboard{
+display:flex;
+gap:10px;
+margin-bottom:15px;
+}
+
+.box{
+flex:1;
+background:white;
+padding:10px;
+border-radius:10px;
+text-align:center;
+}
+
 .form{
 background:white;
-padding:20px;
+padding:15px;
 border-radius:10px;
 margin-bottom:20px;
 }
@@ -43,7 +58,6 @@ button{
 background:#27ae60;
 color:white;
 border:none;
-cursor:pointer;
 }
 
 .columns{
@@ -59,16 +73,14 @@ border-radius:10px;
 }
 
 .card{
-background:#f2f2f2;
-padding:12px;
+background:#f5f5f5;
+padding:10px;
 border-radius:8px;
 margin-top:10px;
 }
 
-.delete{
-background:red;
-margin-top:8px;
-}
+.delete{background:red;}
+.edit{background:orange;}
 
 </style>
 
@@ -80,64 +92,71 @@ margin-top:8px;
 
 <h1>🐄 Farm Tracker</h1>
 
+<div class="dashboard">
+<div class="box">🐄 Total: <span id="total">0</span></div>
+<div class="box">📅 Deliveries Soon: <span id="soon">0</span></div>
+</div>
+
 <div class="form">
 
 <input id="name" placeholder="Cow Name">
 
 <select id="type">
-<option value="Pregnancy">Pregnancy</option>
-<option value="Heat">Heat</option>
+<option>Pregnancy</option>
+<option>Heat</option>
 </select>
 
 <input type="date" id="date">
 
-<button onclick="addCow()">Add Cow</button>
+<button onclick="addCow()">Save</button>
 
 </div>
-
 
 <div class="columns">
 
 <div class="column">
-
 <h3>🐄 Pregnancy</h3>
-
 <div id="pregnancy"></div>
-
 </div>
-
 
 <div class="column">
-
-<h3>🔥 Heat Cycle</h3>
-
+<h3>🔥 Heat</h3>
 <div id="heat"></div>
-
 </div>
 
 </div>
 
 </div>
-
 
 <script>
 
-/* CHANGE ONLY IF SCRIPT URL CHANGES */
+const SCRIPT_URL="https://script.google.com/macros/s/AKfycbygvaiuRXEXRnUiBLw98Rsx3JhZh_kAegMSTJ67YkpGDjXuWQWxIofXeviu-yGI9yUf/exec"
 
-const SCRIPT_URL =
-"https://script.google.com/macros/s/AKfycbygvaiuRXEXRnUiBLw98Rsx3JhZh_kAegMSTJ67YkpGDjXuWQWxIofXeviu-yGI9yUf/exec";
+const SHEET_URL="https://docs.google.com/spreadsheets/d/e/2PACX-1vQRMTIQyMhKfxcU4cyFhPBrkpYjPq7_5AsrZXMD_gOw3_5JBGQayb-2-U7zKF4gem8YuQHLapytSofE/pub?output=csv"
 
+const GESTATION=280
+const HEAT=21
 
-const SHEET_URL =
-"https://docs.google.com/spreadsheets/d/e/2PACX-1vQRMTIQyMhKfxcU4cyFhPBrkpYjPq7_5AsrZXMD_gOw3_5JBGQayb-2-U7zKF4gem8YuQHLapytSofE/pub?output=csv";
+let editData=null
 
+Notification.requestPermission()
 
-const GESTATION = 280;
-const HEAT = 21;
-
-
+function notify(msg){
+if(Notification.permission==="granted"){
+new Notification(msg)
+}
+}
 
 function addCow(){
+
+if(!name.value || !date.value){
+alert("Enter details")
+return
+}
+
+if(editData){
+deleteCow(editData.name,editData.type,editData.date)
+}
 
 fetch(SCRIPT_URL,{
 method:"POST",
@@ -147,11 +166,9 @@ name:name.value,
 type:type.value,
 date:date.value
 })
-})
-.then(()=>location.reload())
+}).then(()=>location.reload())
 
 }
-
 
 function deleteCow(name,type,date){
 
@@ -164,44 +181,41 @@ type:type,
 date:date
 })
 })
-.then(()=>location.reload())
 
 }
 
+function editCow(n,t,d){
+name.value=n
+type.value=t
+date.value=d
+editData={name:n,type:t,date:d}
+}
 
+let totalCount=0
+let soonCount=0
 
 fetch(SHEET_URL)
 .then(r=>r.text())
 .then(csv=>{
 
-let rows = csv.split("\n").slice(1);
+let rows=csv.split("\n").slice(1)
 
-rows.forEach(row=>{
+rows.forEach(r=>{
 
-let c=row.split(",")
+let c=r.split(",")
 
-let cow=c[0]
-let type=c[1]
-let date=c[2]
+if(!c[0]||!c[1]||!c[2]) return
 
-if(!cow||!type||!date) return
+totalCount++
 
-processCow(cow,type,date)
+processCow(c[0],c[1],c[2])
 
 })
 
+total.innerText=totalCount
+soon.innerText=soonCount
+
 })
-
-
-function convert(d){
-
-return{
-m:Math.floor(d/30),
-d:d%30
-}
-
-}
-
 
 
 function processCow(name,type,date){
@@ -210,28 +224,31 @@ let start=new Date(date)
 let today=new Date()
 
 let diff=Math.floor((today-start)/86400000)
+if(diff<0) diff=0
 
-if(type.trim()=="Pregnancy"){
+if(type=="Pregnancy"){
 
 let remain=GESTATION-diff
 if(remain<0) remain=0
 
-let done=convert(diff)
-let pend=convert(remain)
+if(remain<=5) soonCount++
 
 let delivery=new Date(start.getTime()+GESTATION*86400000)
 
+if(remain==2||remain==1){
+notify(name+" delivery in "+remain+" days")
+}
+
 pregnancy.innerHTML+=`
-
 <div class="card">
-
 <b>${name}</b><br>
+Remaining: ${remain} days<br>
+Delivery: ${delivery.toLocaleDateString('en-IN')}
 
-Completed: ${done.m}M ${done.d}D<br>
-
-Remaining: ${pend.m}M ${pend.d}D<br>
-
-Delivery: ${delivery.toDateString()}
+<button class="edit"
+onclick="editCow('${name}','${type}','${date}')">
+Edit
+</button>
 
 <button class="delete"
 onclick="deleteCow('${name}','${type}','${date}')">
@@ -239,31 +256,33 @@ Delete
 </button>
 
 </div>
-
 `
-
 }
 
+if(type=="Heat"){
 
+let cycle=Math.floor(diff/HEAT)
 
-if(type.trim()=="Heat"){
+let next=new Date(start)
+next.setDate(start.getDate()+(cycle+1)*HEAT)
 
-let remain=HEAT-diff
+let remain=Math.ceil((next-today)/86400000)
 if(remain<0) remain=0
 
-let next=new Date(start.getTime()+HEAT*86400000)
+if(remain==3||remain==2){
+notify(name+" heat in "+remain+" days")
+}
 
 heat.innerHTML+=`
-
 <div class="card">
-
 <b>${name}</b><br>
+Next Heat In: ${remain} days<br>
+Next Heat: ${next.toLocaleDateString('en-IN')}
 
-Days: ${diff}<br>
-
-Next Heat In: ${remain} Days<br>
-
-Next Heat: ${next.toDateString()}
+<button class="edit"
+onclick="editCow('${name}','${type}','${date}')">
+Edit
+</button>
 
 <button class="delete"
 onclick="deleteCow('${name}','${type}','${date}')">
@@ -271,11 +290,14 @@ Delete
 </button>
 
 </div>
-
 `
+}
 
 }
 
+/* PWA INSTALL */
+if('serviceWorker' in navigator){
+navigator.serviceWorker.register('sw.js')
 }
 
 </script>
