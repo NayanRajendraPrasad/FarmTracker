@@ -24,16 +24,18 @@ text-align:center;
 color:white;
 }
 
-/* MESSAGE BOX */
+/* MESSAGE */
 .msg{
-background:#27ae60;
-color:white;
+display:none;
 padding:10px;
 border-radius:8px;
 margin-bottom:10px;
-display:none;
 text-align:center;
+color:white;
 }
+
+.success{background:#27ae60;}
+.error{background:red;}
 
 .form{
 background:white;
@@ -54,7 +56,6 @@ button{
 background:#27ae60;
 color:white;
 border:none;
-cursor:pointer;
 }
 
 .columns{
@@ -91,7 +92,7 @@ margin-top:8px;
 
 <h1>🐄 Farm Tracker</h1>
 
-<div id="message" class="msg"></div>
+<div id="msg" class="msg"></div>
 
 <div class="form">
 
@@ -127,22 +128,18 @@ margin-top:8px;
 <script>
 
 const SCRIPT_URL="https://script.google.com/macros/s/AKfycbygvaiuRXEXRnUiBLw98Rsx3JhZh_kAegMSTJ67YkpGDjXuWQWxIofXeviu-yGI9yUf/exec"
-
 const SHEET_URL="https://docs.google.com/spreadsheets/d/e/2PACX-1vQRMTIQyMhKfxcU4cyFhPBrkpYjPq7_5AsrZXMD_gOw3_5JBGQayb-2-U7zKF4gem8YuQHLapytSofE/pub?output=csv"
 
 const GESTATION=280
 const HEAT=21
 
-
-function showMsg(text,color="green"){
-let m=document.getElementById("message")
-m.style.display="block"
-m.style.background=color
+function showMsg(text,type){
+let m=document.getElementById("msg")
+m.className="msg "+type
 m.innerText=text
+m.style.display="block"
 
-setTimeout(()=>{
-m.style.display="none"
-},3000)
+setTimeout(()=>m.style.display="none",3000)
 }
 
 
@@ -154,15 +151,13 @@ let t=type.value
 let d=date.value
 
 if(!n || !t || !d){
-showMsg("Fill all fields","red")
+showMsg("Fill all fields","error")
 return
 }
 
 fetch(SCRIPT_URL,{
 method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
+mode:"no-cors",
 body:JSON.stringify({
 action:"add",
 name:n,
@@ -170,54 +165,44 @@ type:t,
 date:d
 })
 })
-.then(res=>res.json())
-.then(()=>{
-showMsg("✅ Cow added successfully")
-setTimeout(()=>location.reload(),1000)
-})
-.catch(()=>{
-showMsg("❌ Error adding cow","red")
-})
+
+showMsg("✅ Cow added successfully","success")
+
+setTimeout(()=>location.reload(),800)
 
 }
 
 
 /* DELETE */
-function deleteCow(name,type,date){
+function deleteCow(n,t,d){
 
 fetch(SCRIPT_URL,{
 method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
+mode:"no-cors",
 body:JSON.stringify({
 action:"delete",
-name:name,
-type:type,
-date:date
+name:n,
+type:t,
+date:d
 })
 })
-.then(res=>res.json())
-.then(()=>{
-showMsg("🗑 Cow deleted successfully")
-setTimeout(()=>location.reload(),1000)
-})
-.catch(()=>{
-showMsg("❌ Error deleting","red")
-})
+
+showMsg("🗑 Cow deleted successfully","success")
+
+setTimeout(()=>location.reload(),800)
 
 }
 
 
-/* LOAD DATA */
+/* LOAD */
 fetch(SHEET_URL)
-.then(res=>res.text())
+.then(r=>r.text())
 .then(csv=>{
+
+let rows=csv.split("\n").slice(1)
 
 pregnancy.innerHTML=""
 heat.innerHTML=""
-
-let rows=csv.split("\n").slice(1)
 
 rows.forEach(r=>{
 
