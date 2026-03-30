@@ -113,7 +113,7 @@ margin-top:8px;
 
 <script>
 
-/* YOUR LINKS */
+/* 🔴 YOUR LINKS */
 const SCRIPT_URL="https://script.google.com/macros/s/AKfycbygvaiuRXEXRnUiBLw98Rsx3JhZh_kAegMSTJ67YkpGDjXuWQWxIofXeviu-yGI9yUf/exec"
 
 const SHEET_URL="https://docs.google.com/spreadsheets/d/e/2PACX-1vQRMTIQyMhKfxcU4cyFhPBrkpYjPq7_5AsrZXMD_gOw3_5JBGQayb-2-U7zKF4gem8YuQHLapytSofE/pub?output=csv"
@@ -122,7 +122,7 @@ const GESTATION=280
 const HEAT=21
 
 
-/* ADD FUNCTION (FIXED) */
+/* ✅ ADD FUNCTION (FINAL FIX) */
 function addCow(){
 
 let n=document.getElementById("name").value.trim()
@@ -136,9 +136,7 @@ return
 
 fetch(SCRIPT_URL,{
 method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
+mode:"no-cors",
 body:JSON.stringify({
 action:"add",
 name:n,
@@ -146,27 +144,22 @@ type:t,
 date:d
 })
 })
-.then(res=>res.json())
-.then(data=>{
-console.log(data)
+.then(()=>{
 location.reload()
 })
-.catch(err=>{
-console.error("Error:",err)
+.catch(()=>{
 alert("Error adding data")
 })
 
 }
 
 
-/* DELETE FUNCTION */
+/* ✅ DELETE FUNCTION */
 function deleteCow(name,type,date){
 
 fetch(SCRIPT_URL,{
 method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
+mode:"no-cors",
 body:JSON.stringify({
 action:"delete",
 name:name,
@@ -174,18 +167,12 @@ type:type,
 date:date
 })
 })
-.then(res=>res.json())
-.then(()=>{
-location.reload()
-})
-.catch(err=>{
-console.error(err)
-})
+.then(()=>location.reload())
 
 }
 
 
-/* LOAD DATA */
+/* ✅ LOAD DATA */
 fetch(SHEET_URL)
 .then(res=>res.text())
 .then(csv=>{
@@ -212,7 +199,7 @@ processCow(name,type,date)
 })
 
 
-/* PROCESS DATA */
+/* ✅ PROCESS DATA */
 function processCow(name,type,date){
 
 let start=new Date(date)
