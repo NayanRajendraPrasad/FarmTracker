@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Farm Tracker</title>
 
-<link rel="manifest" href="manifest.json">
-
 <style>
 
 body{
@@ -26,20 +24,6 @@ text-align:center;
 color:white;
 }
 
-.dashboard{
-display:flex;
-gap:10px;
-margin-bottom:15px;
-}
-
-.box{
-flex:1;
-background:white;
-padding:10px;
-border-radius:10px;
-text-align:center;
-}
-
 .form{
 background:white;
 padding:15px;
@@ -52,6 +36,7 @@ width:100%;
 padding:10px;
 margin-top:10px;
 border-radius:6px;
+border:1px solid #ccc;
 }
 
 button{
@@ -79,8 +64,10 @@ border-radius:8px;
 margin-top:10px;
 }
 
-.delete{background:red;}
-.edit{background:orange;}
+.delete{
+background:red;
+margin-top:8px;
+}
 
 </style>
 
@@ -91,11 +78,6 @@ margin-top:10px;
 <div class="container">
 
 <h1>🐄 Farm Tracker</h1>
-
-<div class="dashboard">
-<div class="box">🐄 Total: <span id="total">0</span></div>
-<div class="box">📅 Deliveries Soon: <span id="soon">0</span></div>
-</div>
 
 <div class="form">
 
@@ -108,7 +90,7 @@ margin-top:10px;
 
 <input type="date" id="date">
 
-<button onclick="addCow()">Save</button>
+<button onclick="addCow()">Add Cow</button>
 
 </div>
 
@@ -130,6 +112,7 @@ margin-top:10px;
 
 <script>
 
+/* 🔴 YOUR LINKS */
 const SCRIPT_URL="https://script.google.com/macros/s/AKfycbygvaiuRXEXRnUiBLw98Rsx3JhZh_kAegMSTJ67YkpGDjXuWQWxIofXeviu-yGI9yUf/exec"
 
 const SHEET_URL="https://docs.google.com/spreadsheets/d/e/2PACX-1vQRMTIQyMhKfxcU4cyFhPBrkpYjPq7_5AsrZXMD_gOw3_5JBGQayb-2-U7zKF4gem8YuQHLapytSofE/pub?output=csv"
@@ -137,43 +120,44 @@ const SHEET_URL="https://docs.google.com/spreadsheets/d/e/2PACX-1vQRMTIQyMhKfxcU
 const GESTATION=280
 const HEAT=21
 
-let editData=null
 
-Notification.requestPermission()
-
-function notify(msg){
-if(Notification.permission==="granted"){
-new Notification(msg)
-}
-}
-
+/* ADD */
 function addCow(){
 
-if(!name.value || !date.value){
-alert("Enter details")
-return
-}
+let n=document.getElementById("name").value
+let t=document.getElementById("type").value
+let d=document.getElementById("date").value
 
-if(editData){
-deleteCow(editData.name,editData.type,editData.date)
+if(!n || !d){
+alert("Enter all details")
+return
 }
 
 fetch(SCRIPT_URL,{
 method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
 body:JSON.stringify({
 action:"add",
-name:name.value,
-type:type.value,
-date:date.value
+name:n,
+type:t,
+date:d
 })
-}).then(()=>location.reload())
+})
+.then(()=>location.reload())
 
 }
 
+
+/* DELETE */
 function deleteCow(name,type,date){
 
 fetch(SCRIPT_URL,{
 method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
 body:JSON.stringify({
 action:"delete",
 name:name,
@@ -181,22 +165,18 @@ type:type,
 date:date
 })
 })
+.then(()=>location.reload())
 
 }
 
-function editCow(n,t,d){
-name.value=n
-type.value=t
-date.value=d
-editData={name:n,type:t,date:d}
-}
 
-let totalCount=0
-let soonCount=0
-
+/* LOAD DATA */
 fetch(SHEET_URL)
 .then(r=>r.text())
 .then(csv=>{
+
+pregnancy.innerHTML=""
+heat.innerHTML=""
 
 let rows=csv.split("\n").slice(1)
 
@@ -206,14 +186,9 @@ let c=r.split(",")
 
 if(!c[0]||!c[1]||!c[2]) return
 
-totalCount++
-
-processCow(c[0],c[1],c[2])
+processCow(c[0].trim(),c[1].trim(),c[2].trim())
 
 })
-
-total.innerText=totalCount
-soon.innerText=soonCount
 
 })
 
@@ -226,18 +201,14 @@ let today=new Date()
 let diff=Math.floor((today-start)/86400000)
 if(diff<0) diff=0
 
-if(type=="Pregnancy"){
+
+/* PREGNANCY */
+if(type.toLowerCase()=="pregnancy"){
 
 let remain=GESTATION-diff
 if(remain<0) remain=0
 
-if(remain<=5) soonCount++
-
 let delivery=new Date(start.getTime()+GESTATION*86400000)
-
-if(remain==2||remain==1){
-notify(name+" delivery in "+remain+" days")
-}
 
 pregnancy.innerHTML+=`
 <div class="card">
@@ -245,21 +216,17 @@ pregnancy.innerHTML+=`
 Remaining: ${remain} days<br>
 Delivery: ${delivery.toLocaleDateString('en-IN')}
 
-<button class="edit"
-onclick="editCow('${name}','${type}','${date}')">
-Edit
-</button>
-
 <button class="delete"
 onclick="deleteCow('${name}','${type}','${date}')">
 Delete
 </button>
-
 </div>
 `
 }
 
-if(type=="Heat"){
+
+/* HEAT */
+if(type.toLowerCase()=="heat"){
 
 let cycle=Math.floor(diff/HEAT)
 
@@ -269,35 +236,20 @@ next.setDate(start.getDate()+(cycle+1)*HEAT)
 let remain=Math.ceil((next-today)/86400000)
 if(remain<0) remain=0
 
-if(remain==3||remain==2){
-notify(name+" heat in "+remain+" days")
-}
-
 heat.innerHTML+=`
 <div class="card">
 <b>${name}</b><br>
 Next Heat In: ${remain} days<br>
 Next Heat: ${next.toLocaleDateString('en-IN')}
 
-<button class="edit"
-onclick="editCow('${name}','${type}','${date}')">
-Edit
-</button>
-
 <button class="delete"
 onclick="deleteCow('${name}','${type}','${date}')">
 Delete
 </button>
-
 </div>
 `
 }
 
-}
-
-/* PWA INSTALL */
-if('serviceWorker' in navigator){
-navigator.serviceWorker.register('sw.js')
 }
 
 </script>
