@@ -84,8 +84,8 @@ margin-top:8px;
 <input id="name" placeholder="Cow Name">
 
 <select id="type">
-<option>Pregnancy</option>
-<option>Heat</option>
+<option value="Pregnancy">Pregnancy</option>
+<option value="Heat">Heat</option>
 </select>
 
 <input type="date" id="date">
@@ -112,7 +112,6 @@ margin-top:8px;
 
 <script>
 
-/* 🔴 YOUR LINKS */
 const SCRIPT_URL="https://script.google.com/macros/s/AKfycbygvaiuRXEXRnUiBLw98Rsx3JhZh_kAegMSTJ67YkpGDjXuWQWxIofXeviu-yGI9yUf/exec"
 
 const SHEET_URL="https://docs.google.com/spreadsheets/d/e/2PACX-1vQRMTIQyMhKfxcU4cyFhPBrkpYjPq7_5AsrZXMD_gOw3_5JBGQayb-2-U7zKF4gem8YuQHLapytSofE/pub?output=csv"
@@ -121,15 +120,15 @@ const GESTATION=280
 const HEAT=21
 
 
-/* ADD */
+/* ADD FUNCTION */
 function addCow(){
 
-let n=document.getElementById("name").value
+let n=document.getElementById("name").value.trim()
 let t=document.getElementById("type").value
 let d=document.getElementById("date").value
 
-if(!n || !d){
-alert("Enter all details")
+if(!n || !t || !d){
+alert("Please fill all fields")
 return
 }
 
@@ -150,7 +149,7 @@ date:d
 }
 
 
-/* DELETE */
+/* DELETE FUNCTION */
 function deleteCow(name,type,date){
 
 fetch(SCRIPT_URL,{
@@ -172,7 +171,7 @@ date:date
 
 /* LOAD DATA */
 fetch(SHEET_URL)
-.then(r=>r.text())
+.then(res=>res.text())
 .then(csv=>{
 
 pregnancy.innerHTML=""
@@ -180,19 +179,24 @@ heat.innerHTML=""
 
 let rows=csv.split("\n").slice(1)
 
-rows.forEach(r=>{
+rows.forEach(row=>{
 
-let c=r.split(",")
+let c=row.split(",")
 
-if(!c[0]||!c[1]||!c[2]) return
+let name=c[0]?.trim()
+let type=c[1]?.trim()
+let date=c[2]?.trim()
 
-processCow(c[0].trim(),c[1].trim(),c[2].trim())
+if(!name || !type || !date) return
+
+processCow(name,type,date)
 
 })
 
 })
 
 
+/* PROCESS DATA */
 function processCow(name,type,date){
 
 let start=new Date(date)
@@ -203,7 +207,7 @@ if(diff<0) diff=0
 
 
 /* PREGNANCY */
-if(type.toLowerCase()=="pregnancy"){
+if(type==="Pregnancy"){
 
 let remain=GESTATION-diff
 if(remain<0) remain=0
@@ -226,7 +230,7 @@ Delete
 
 
 /* HEAT */
-if(type.toLowerCase()=="heat"){
+if(type==="Heat"){
 
 let cycle=Math.floor(diff/HEAT)
 
