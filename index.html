@@ -1,271 +1,253 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
+  <title>Farm Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Farm Tracker</title>
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 
-<style>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
 
-body{
-margin:0;
-font-family:Arial;
-background:linear-gradient(135deg,#43cea2,#185a9d);
-}
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #667eea, #764ba2, #43cea2);
+      background-size: 300% 300%;
+      animation: gradientBG 8s ease infinite;
+      padding: 15px;
+      color: #333;
+    }
 
-.container{
-max-width:900px;
-margin:auto;
-padding:20px;
-}
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
 
-h1{
-text-align:center;
-color:white;
-}
+    h2 {
+      text-align: center;
+      color: white;
+      margin-bottom: 15px;
+    }
 
-.msg{
-display:none;
-padding:10px;
-border-radius:8px;
-margin-bottom:10px;
-text-align:center;
-color:white;
-}
+    .form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      background: rgba(255,255,255,0.95);
+      padding: 15px;
+      border-radius: 12px;
+    }
 
-.success{background:#27ae60;}
-.error{background:red;}
+    input, select {
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
 
-.form{
-background:white;
-padding:15px;
-border-radius:10px;
-margin-bottom:20px;
-}
+    button {
+      padding: 10px 15px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      background: #28a745;
+      color: white;
+      font-weight: bold;
+    }
 
-input,select,button{
-width:100%;
-padding:10px;
-margin-top:10px;
-border-radius:6px;
-border:1px solid #ccc;
-}
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-top: 20px;
+    }
 
-button{
-background:#27ae60;
-color:white;
-border:none;
-cursor:pointer;
-}
+    .column {
+      flex: 1;
+      min-width: 320px;
+      background: rgba(255,255,255,0.95);
+      padding: 15px;
+      border-radius: 12px;
+    }
 
-.columns{
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:20px;
-}
+    .column h3 {
+      text-align: center;
+      margin-bottom: 10px;
+    }
 
-.column{
-background:white;
-padding:15px;
-border-radius:10px;
-}
+    .card {
+      background: #f9fbff;
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 10px;
+      border-left: 5px solid #3498db;
+    }
 
-.card{
-background:#f5f5f5;
-padding:10px;
-border-radius:8px;
-margin-top:10px;
-}
+    .edit {
+      background: orange;
+      margin-top: 8px;
+    }
 
-.delete{
-background:red;
-margin-top:8px;
-}
+    .delete {
+      background: red;
+      margin-top: 8px;
+      color: white;
+    }
 
-</style>
-
+    .msg {
+      text-align: center;
+      margin-top: 10px;
+      color: white;
+      font-weight: bold;
+    }
+  </style>
 </head>
 
 <body>
 
-<div class="container">
-
-<h1>🐄 Farm Tracker</h1>
-
-<div id="msg" class="msg"></div>
+<h2>Farm Tracker</h2>
 
 <div class="form">
-
-<input id="name" placeholder="Cow Name">
-
-<select id="type">
-<option value="Pregnancy">Pregnancy</option>
-<option value="Heat">Heat</option>
-</select>
-
-<input type="date" id="date">
-
-<button onclick="addCow()">Add Cow</button>
-
+  <input id="name" placeholder="Cow Name">
+  <select id="type">
+    <option value="">Type</option>
+    <option value="Pregnancy">Pregnancy</option>
+    <option value="Heat">Heat</option>
+  </select>
+  <input type="date" id="date">
+  <button onclick="addCow()">Add</button>
 </div>
 
-<div class="columns">
+<div class="msg" id="msg"></div>
 
-<div class="column">
-<h3>🐄 Pregnancy</h3>
-<div id="pregnancy"></div>
-</div>
+<div class="container">
+  <div class="column">
+    <h3>Pregnancy</h3>
+    <div id="preg"></div>
+  </div>
 
-<div class="column">
-<h3>🔥 Heat</h3>
-<div id="heat"></div>
-</div>
-
-</div>
-
+  <div class="column">
+    <h3>Heat Cycle</h3>
+    <div id="heat"></div>
+  </div>
 </div>
 
 <script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCleV5zh1j0cADyxK60vMjczILUZvI7eQw",
+  authDomain: "farm-tracker-db275.firebaseapp.com",
+  databaseURL: "https://farm-tracker-db275-default-rtdb.firebaseio.com",
+  projectId: "farm-tracker-db275",
+  storageBucket: "farm-tracker-db275.firebasestorage.app",
+  messagingSenderId: "224673403017",
+  appId: "1:224673403017:web:99904a186cbeea96c67658"
+};
 
-/* ✅ YOUR SCRIPT */
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzmp07isHriEbjnXZrOQ_FNABB6al2jD5djdXiE9pQ82xqgvNmJte531yk3rnIWS4uU/exec"
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-/* ✅ YOUR SHEET */
-const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQRMTIQyMhKfxcU4cyFhPBrkpYjPq7_5AsrZXMD_gOw3_5JBGQayb-2-U7zKF4gem8YuQHLapytSofE/pub?output=csv"
+const nameInput = document.getElementById("name");
+const typeInput = document.getElementById("type");
+const dateInput = document.getElementById("date");
+const preg = document.getElementById("preg");
+const heat = document.getElementById("heat");
 
-const GESTATION=280
-const HEAT=21
-
-function showMsg(text,type){
-let m=document.getElementById("msg")
-m.className="msg "+type
-m.innerText=text
-m.style.display="block"
-setTimeout(()=>m.style.display="none",3000)
-}
-
+function msg(t){ document.getElementById("msg").innerText = t; }
 
 /* ADD */
 function addCow(){
+  const name = nameInput.value.trim();
+  const type = typeInput.value;
+  const date = dateInput.value;
 
-let n=name.value.trim()
-let t=type.value
-let d=date.value
+  if(!name || !type || !date){
+    msg("Fill all fields"); return;
+  }
 
-if(!n || !t || !d){
-showMsg("Fill all fields","error")
-return
+  const id = name + "_" + date;
+
+  db.ref("cows/"+id).set({name,type,date})
+    .then(()=>msg("Added successfully"));
 }
-
-fetch(SCRIPT_URL,{
-method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
-body:JSON.stringify({
-action:"add",
-name:n,
-type:t,
-date:d
-})
-})
-.then(()=> {
-showMsg("✅ Cow added","success")
-setTimeout(()=>location.reload(),800)
-})
-.catch(()=> showMsg("❌ Error adding","error"))
-
-}
-
 
 /* DELETE */
-function deleteCow(n,t,d){
-
-fetch(SCRIPT_URL,{
-method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
-body:JSON.stringify({
-action:"delete",
-name:n,
-type:t,
-date:d
-})
-})
-.then(()=>{
-showMsg("🗑 Deleted","success")
-setTimeout(()=>location.reload(),800)
-})
-.catch(()=> showMsg("❌ Error deleting","error"))
-
+function deleteCow(id){
+  db.ref("cows/"+id).remove()
+    .then(()=>msg("Deleted successfully"));
 }
 
+/* EDIT */
+function editCow(id, data){
+  const name = prompt("Name", data.name);
+  const type = prompt("Type", data.type);
+  const date = prompt("Date YYYY-MM-DD", data.date);
 
-/* LOAD DATA */
-fetch(SHEET_URL)
-.then(r=>r.text())
-.then(csv=>{
+  if(!name || !type || !date) return;
 
-pregnancy.innerHTML=""
-heat.innerHTML=""
-
-let rows=csv.split("\n").slice(1)
-
-rows.forEach(r=>{
-let c=r.split(",")
-
-if(!c[0]||!c[1]||!c[2]) return
-
-processCow(c[0].trim(),c[1].trim(),c[2].trim())
-})
-
-})
-
-
-function processCow(name,type,date){
-
-let start=new Date(date)
-let today=new Date()
-
-let diff=Math.floor((today-start)/86400000)
-if(diff<0) diff=0
-
-if(type==="Pregnancy"){
-
-let remain=GESTATION-diff
-if(remain<0) remain=0
-
-let delivery=new Date(start.getTime()+GESTATION*86400000)
-
-pregnancy.innerHTML+=`
-<div class="card">
-<b>${name}</b><br>
-Remaining: ${remain} days<br>
-Delivery: ${delivery.toLocaleDateString('en-IN')}
-<button class="delete" onclick="deleteCow('${name}','${type}','${date}')">Delete</button>
-</div>`
+  db.ref("cows/"+id).set({name,type,date})
+    .then(()=>msg("Updated successfully"));
 }
 
-if(type==="Heat"){
+/* LOAD */
+db.ref("cows").on("value", snap=>{
+  const data = snap.val() || {};
+  render(data);
+});
 
-let next=new Date(start)
-next.setDate(start.getDate()+HEAT)
+/* RENDER */
+function render(data){
+  preg.innerHTML="";
+  heat.innerHTML="";
 
-let remain=Math.ceil((next-today)/86400000)
-if(remain<0) remain=0
+  const today = new Date();
 
-heat.innerHTML+=`
-<div class="card">
-<b>${name}</b><br>
-Next Heat In: ${remain} days<br>
-Next Heat: ${next.toLocaleDateString('en-IN')}
-<button class="delete" onclick="deleteCow('${name}','${type}','${date}')">Delete</button>
-</div>`
+  Object.keys(data).forEach(id=>{
+    const item = data[id];
+    const start = new Date(item.date);
+
+    let div = document.createElement("div");
+    div.className="card";
+
+    const daysCompleted = Math.max(Math.floor((today - start)/(1000*60*60*24)),0);
+
+    if(item.type==="Pregnancy"){
+      const monthsCompleted = Math.floor(daysCompleted / 30);
+      const remain = Math.max(280 - daysCompleted, 0);
+
+      const delivery = new Date(start);
+      delivery.setDate(delivery.getDate()+280);
+
+      div.innerHTML=`
+        <b>${item.name}</b><br>
+        Completed: ${daysCompleted} days (${monthsCompleted} months)<br>
+        Remaining: ${remain} days<br>
+        Delivery: ${delivery.toDateString()}<br>
+        <button class="edit" onclick='editCow("${id}",${JSON.stringify(item)})'>Edit</button>
+        <button class="delete" onclick='deleteCow("${id}")'>Delete</button>
+      `;
+
+      preg.appendChild(div);
+    }
+
+    if(item.type==="Heat"){
+      const next = Math.max(21 - (daysCompleted % 21), 0);
+
+      div.innerHTML=`
+        <b>${item.name}</b><br>
+        Days completed: ${daysCompleted} days<br>
+        Next heat in: ${next} days<br>
+        <button class="edit" onclick='editCow("${id}",${JSON.stringify(item)})'>Edit</button>
+        <button class="delete" onclick='deleteCow("${id}")'>Delete</button>
+      `;
+
+      heat.appendChild(div);
+    }
+  });
 }
-
-}
-
 </script>
 
 </body>
