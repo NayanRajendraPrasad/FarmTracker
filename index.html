@@ -5,6 +5,7 @@
   <title>Farm Tracker</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 
@@ -13,21 +14,20 @@
 
     body {
       font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(135deg, #667eea, #764ba2, #43cea2);
-      padding: 15px;
-      color: #333;
+      background: linear-gradient(135deg, #5f2c82, #49a09d);
+      padding: 20px;
     }
 
     h2 {
       text-align: center;
-      color: white;
-      margin-bottom: 15px;
+      color: #fff;
+      margin-bottom: 20px;
     }
 
     .form {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 12px;
       justify-content: center;
       background: rgba(255,255,255,0.95);
       padding: 15px;
@@ -36,24 +36,30 @@
 
     input, select {
       padding: 10px;
-      border-radius: 6px;
+      border-radius: 8px;
       border: 1px solid #ccc;
     }
 
     button {
-      padding: 10px 15px;
-      border-radius: 6px;
+      padding: 10px 18px;
+      border-radius: 8px;
       border: none;
       cursor: pointer;
-      background: #28a745;
-      color: white;
       font-weight: bold;
+      transition: 0.3s;
+    }
+
+    button:hover { transform: translateY(-2px); }
+
+    button:not(.edit):not(.delete) {
+      background: linear-gradient(135deg, #00c853, #64dd17);
+      color: white;
     }
 
     .container {
       display: flex;
       flex-wrap: wrap;
-      gap: 15px;
+      gap: 20px;
       margin-top: 20px;
     }
 
@@ -65,11 +71,16 @@
       border-radius: 12px;
     }
 
+    .column h3 {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
     .card {
-      padding: 12px;
-      margin: 10px 0;
-      border-radius: 10px;
-      color: #fff;
+      padding: 14px;
+      margin: 12px 0;
+      border-radius: 12px;
+      color: white;
     }
 
     .preg-card {
@@ -77,23 +88,26 @@
     }
 
     .heat-card {
-      background: linear-gradient(135deg, #ff9966, #ff5e62);
+      background: linear-gradient(135deg, #ff7e5f, #ff3d00);
     }
 
     .edit {
-      background: #f39c12;
-      margin-top: 8px;
+      background: linear-gradient(135deg, #ffb300, #ff6f00);
+      color: white;
+      margin-top: 10px;
+      margin-right: 6px;
     }
 
     .delete {
-      background: #e74c3c;
-      margin-top: 8px;
+      background: linear-gradient(135deg, #ff1744, #d50000);
+      color: white;
+      margin-top: 10px;
     }
 
     .msg {
       text-align: center;
       margin-top: 10px;
-      color: white;
+      color: #fff;
       font-weight: bold;
     }
   </style>
@@ -133,7 +147,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyCleV5zh1j0cADyxK60vMjczILUZvI7eQw",
   authDomain: "farm-tracker-db275.firebaseapp.com",
   databaseURL: "https://farm-tracker-db275-default-rtdb.firebaseio.com",
-  projectId: "farm-tracker-db275",
+  projectId: "farm-tracker-db275"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -184,8 +198,8 @@ function editCow(id, data){
 /* FORMAT MONTHS + DAYS */
 function formatMonthsDays(days){
   const months = Math.floor(days / 30);
-  const remainingDays = days % 30;
-  return `${months} months ${remainingDays} days`;
+  const remaining = days % 30;
+  return `${months} months ${remaining} days`;
 }
 
 /* LOAD */
